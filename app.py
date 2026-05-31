@@ -22,7 +22,9 @@ import streamlit as st
 from src import preprocess, models, evaluate
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-FORM_URL = "https://forms.gle/i3ZyERWofpMMfuH78"
+# Force-copy link: clicking it prompts the teacher to save their OWN copy of the
+# form to their Drive (their own questions + responses), never touching the original.
+FORM_URL = "https://docs.google.com/forms/d/1JkhgYEXwVpPnO6XP4bfN9O5Ob1UOg8XwU9394lhtggc/copy"
 
 MODEL_CHOICES = {
     "Hungarian — balanced team sizes (recommended)": ("hungarian", "compatibility"),
@@ -88,9 +90,11 @@ if "df_raw" not in st.session_state:
 
     st.markdown(
         f"""
-1. Have students complete the survey: **[open the Google Form template]({FORM_URL})**.
-2. In Google Forms, go to **Responses → ⋮ → Download responses (.csv)**.
-3. Upload that CSV below.
+1. **[Make your own copy of the survey]({FORM_URL})** — this saves a private
+   copy to your Google Drive (your own form, your own responses).
+2. Share *your* copy's link with your class and give them a deadline.
+3. In your copy, go to **Responses → ⋮ → Download responses (.csv)**.
+4. Upload that CSV below.
 
 Students are identified only by their **UNCC student ID** — no names. You can
 join the results back to your Canvas roster using that ID.

@@ -7,14 +7,21 @@ technical background needed.
 
 ## Before you start
 
-You'll need a Google Form to collect responses. Use the official template so the
-columns line up with the tool:
+You'll need your own copy of the Google Form to collect responses. Use the
+official template so the columns line up with the tool:
 
-- **Template form:** https://forms.gle/i3ZyERWofpMMfuH78
-- Make a copy (**⋮ → Make a copy** or **Send a copy to students**), and keep
-  these settings:
-  - **Do not** collect email addresses.
-  - **Do not** require Google sign-in.
+- **Get your own copy:** https://docs.google.com/forms/d/1JkhgYEXwVpPnO6XP4bfN9O5Ob1UOg8XwU9394lhtggc/copy
+  - Clicking this prompts you to **save a private copy to your own Google
+    Drive** — your own form, your own responses. It never touches anyone else's
+    copy, and you don't need edit access to the original.
+- In your copy, keep these settings:
+  - **Do not** collect email addresses — this keeps the form pseudonymous
+    (student ID only), which is the privacy basis of the tool.
+  - **Limit to 1 response** is recommended (stops duplicate submissions). Note
+    this *does* require students to sign in to a Google account — their
+    `@charlotte.edu` account works fine, and their email is still not collected.
+  - **Allow response editing** is recommended, so a student can fix a typo
+    instead of submitting twice.
   - Keep the **UNCC student ID** question required — it's how teams map back to
     your roster.
   - Don't rename the questions. The tool matches them by their exact wording.
@@ -25,8 +32,8 @@ Aim for **at least 9 responses** (ideally 20+) for the matching to be meaningful
 
 ## Step 1 — Collect responses
 
-Share the form link with your class (Canvas announcement, email, etc.). Give
-students a deadline so you have all responses before forming teams.
+Share **your copy's** link with your class (Canvas announcement, email, etc.).
+Give students a deadline so you have all responses before forming teams.
 
 ## Step 2 — Download the CSV
 

@@ -22,7 +22,7 @@ tool proposes teams, you make the final call.
 
 ## How to use it (60-second version)
 
-1. Share the **Google Form** with your class.
+1. [**Make your own copy of the Google Form**](https://docs.google.com/forms/d/1JkhgYEXwVpPnO6XP4bfN9O5Ob1UOg8XwU9394lhtggc/copy) and share it with your class.
 2. Download the responses as CSV (**Responses → ⋮ → Download .csv**).
 3. Open the app, upload the CSV, pick a team size, and click **Generate teams**.
 4. Download the results and match student IDs to names in your gradebook.
