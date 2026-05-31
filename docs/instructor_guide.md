@@ -11,7 +11,10 @@ You'll need your own copy of the Google Form to collect responses. Use the
 official template so the columns line up with the tool:
 
 - **Get your own copy:** https://docs.google.com/forms/d/1JkhgYEXwVpPnO6XP4bfN9O5Ob1UOg8XwU9394lhtggc/copy
-  - Clicking this prompts you to **save a private copy to your own Google
+  - Sign in with your **`@charlotte.edu`** account first — the template is
+    shared with UNC Charlotte only, so the link won't copy from a personal
+    account.
+  - Clicking it then prompts you to **save a private copy to your own Google
     Drive** — your own form, your own responses. It never touches anyone else's
     copy, and you don't need edit access to the original.
 - In your copy, keep these settings:
