@@ -1,8 +1,9 @@
+# Palette is deliberately distinct from UNC Charlotte's trademarked brand colors.
 [theme]
-primaryColor = "#005035"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F4F4F4"
-textColor = "#262730"
+primaryColor = "#2563EB"
+backgroundColor = "#F4F7FB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0F172A"
 font = "sans serif"
 
 [server]
