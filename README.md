@@ -7,7 +7,7 @@ you upload the responses and get balanced teams optimized for compatible
 schedules and work styles (or complementary skills). You stay in control — the
 tool proposes teams, you make the final call.
 
-> 🔗 **Live app:** _add your Streamlit URL here after deploying_
+> 🔗 **Live app:** https://teammate-matcher.streamlit.app
 > 🧪 Built on the [`teammate-matcher`](../teammate-matcher) research project (DTSC 2302 capstone).
 
 ---
