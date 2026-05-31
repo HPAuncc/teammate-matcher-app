@@ -17,6 +17,10 @@ official template so the columns line up with the tool:
   - Clicking it then prompts you to **save a private copy to your own Google
     Drive** — your own form, your own responses. It never touches anyone else's
     copy, and you don't need edit access to the original.
+- Your copy will be named **"Copy of Team Formation Survey — Instructor
+  Template."** Rename it to your course/section (e.g., *DTSC 2302 Spring 26
+  Team Survey*) so your responses file is clearly labeled. This is just the
+  form's title — **don't** rename the individual questions (see below).
 - In your copy, keep these settings:
   - **Do not** collect email addresses — this keeps the form pseudonymous
     (student ID only), which is the privacy basis of the tool.
