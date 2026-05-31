@@ -24,7 +24,7 @@ from src import preprocess, models, evaluate
 # ── Configuration ─────────────────────────────────────────────────────────────
 # Force-copy link: clicking it prompts the teacher to save their OWN copy of the
 # form to their Drive (their own questions + responses), never touching the original.
-FORM_URL = "https://docs.google.com/forms/d/1JkhgYEXwVpPnO6XP4bfN9O5Ob1UOg8XwU9394lhtggc/copy"
+FORM_URL = "https://docs.google.com/forms/d/1n3zI__UIbtY5OZGqRnxfEafs6Zjb2Weq3V-NF7qthiA/copy"
 
 MODEL_CHOICES = {
     "Hungarian — balanced team sizes (recommended)": ("hungarian", "compatibility"),
