@@ -58,6 +58,7 @@ streamlit run app.py
 | `src/models.py` | Four matching models + `derive_k()` / `validate_n()` scaling helpers |
 | `src/evaluate.py` | Six-metric team-quality evaluation |
 | `scripts/generate_example_data.py` | Builds `assets/example_survey.csv` |
+| `scripts/generate_logo.py` | Builds `assets/logo.png` (favicon + hero mark) |
 
 The ML logic is copied and generalized from the original capstone repo; that
 project remains frozen as the research artifact.
