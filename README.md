@@ -15,8 +15,10 @@ tool proposes teams, you make the final call.
 ## What it does
 
 - Takes anonymous student survey responses (identified only by **UNCC student ID**).
-- Groups students into balanced teams using one of four models — **Hungarian
-  assignment** (the recommended default) guarantees equal team sizes.
+- Groups students into balanced teams using one of four models. Every model
+  keeps teams the same size by default (±1 for the remainder); **Hungarian
+  assignment** (the recommended default) optimizes that balance globally. You
+  can opt into natural, model-decided sizes under **Advanced options**.
 - Lets you pick the team size; the number of teams is derived automatically.
 - Exports a `student_id → team` CSV you can join straight to your Canvas roster.
 

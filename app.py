@@ -49,20 +49,21 @@ LOGO_PATH = os.path.join(APP_DIR, "assets", "logo.png")
 FORM_URL = "https://docs.google.com/forms/d/1n3zI__UIbtY5OZGqRnxfEafs6Zjb2Weq3V-NF7qthiA/copy"
 
 MODEL_CHOICES = {
-    "Hungarian — balanced team sizes (recommended)": ("hungarian", "compatibility"),
-    "K-Means — schedule/work-style similarity": ("kmeans", "compatibility"),
-    "Agglomerative (Ward) — similarity": ("agglomerative", "compatibility"),
-    "Gaussian Mixture — skill complementarity": ("gmm", "complementarity"),
+    "Hungarian — even sizes + schedule fit (recommended)": ("hungarian", "compatibility"),
+    "K-Means — schedule & work-style similarity": ("kmeans", "compatibility"),
+    "Agglomerative — schedule & work-style similarity": ("agglomerative", "compatibility"),
+    "Gaussian Mixture — complementary skills": ("gmm", "complementarity"),
 }
 
-# key -> (display label, direction arrow)
-METRIC_META = {
-    "silhouette": ("Silhouette", "↑"),
-    "davies_bouldin": ("Davies–Bouldin", "↓"),
-    "calinski_harabasz": ("Calinski–Harabasz", "↑"),
-    "skill_variance": ("Skill variance", "↕"),
-    "schedule_overlap": ("Schedule overlap", "↑"),
-    "skill_coverage": ("Skill coverage", "↑"),
+# Metrics surfaced up front, in plain instructor language (order matters).
+FRIENDLY_METRICS = ("schedule_overlap", "skill_coverage", "skill_variance")
+
+# Clustering diagnostics — accurate but technical, tucked into a collapsed panel.
+# key -> (label, direction arrow, one-line meaning)
+TECHNICAL_METRICS = {
+    "silhouette": ("Silhouette", "↑", "Cluster cohesion vs. separation (−1 to 1)."),
+    "davies_bouldin": ("Davies–Bouldin", "↓", "How much clusters overlap (0 is best)."),
+    "calinski_harabasz": ("Calinski–Harabasz", "↑", "Between- vs. within-team spread."),
 }
 
 # Browser favicon: prefer the generated mark, fall back to an emoji.
@@ -125,6 +126,9 @@ h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif !important; co
 .tm-metric-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748B; font-weight: 600; }
 .tm-metric-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 700; color: #1E3A5F; margin: 4px 0 2px; }
 .tm-metric-dir { font-size: .72rem; color: #64748B; }
+.tm-metric-sub { font-size: .8rem; color: #475569; margin-top: 3px; line-height: 1.4; }
+.tm-metric-scale { font-size: .7rem; color: #94A3B8; margin-top: 5px; }
+.tm-section { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: #1E3A5F; font-size: 1.05rem; margin: 22px 0 8px; }
 
 /* Team cards */
 .tm-team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px,1fr)); gap: 14px; margin: 8px 0 6px; }
@@ -208,23 +212,57 @@ def render_footer():
     )
 
 
-def _fmt_metric(key: str, v) -> str:
-    if v is None:
-        return "–"
-    if key == "calinski_harabasz":
-        return f"{v:.1f}"
-    return f"{v:.2f}"
+def _is_missing(v) -> bool:
+    return v is None or (isinstance(v, float) and pd.isna(v))
 
 
-def render_metric_cards(metrics: dict):
+def _friendly_card(key: str, value: float, n_skills: int):
+    """Return (label, big value, plain-language line, scale hint) for a metric."""
+    if key == "schedule_overlap":
+        return ("Schedule overlap", f"{value * 100:.0f}%",
+                "Shared free-time slots for the average pair.",
+                "0% = no common time · 100% = identical availability")
+    if key == "skill_coverage":
+        return ("Skill coverage", f"{value:.1f} of {n_skills}",
+                "Skill areas with at least one capable member per team.",
+                f"out of {n_skills} surveyed skill areas")
+    if key == "skill_variance":
+        return ("Skill diversity", f"{value:.2f}",
+                "Spread of skill levels within each team.",
+                "higher = a more complementary mix")
+    return (key, f"{value:.2f}", "", "")
+
+
+def render_friendly_metrics(metrics: dict, n_skills: int):
     cards = ['<div class="tm-metric-grid">']
-    for key, (label, arrow) in METRIC_META.items():
-        if key not in metrics:
+    for key in FRIENDLY_METRICS:
+        v = metrics.get(key)
+        if _is_missing(v):
             continue
+        label, value, sub, scale = _friendly_card(key, v, n_skills)
         cards.append(
             f'<div class="tm-metric"><div class="tm-metric-label">{label}</div>'
-            f'<div class="tm-metric-value">{_fmt_metric(key, metrics[key])}</div>'
-            f'<div class="tm-metric-dir">{arrow} {"higher better" if arrow=="↑" else ("lower better" if arrow=="↓" else "context")}</div></div>'
+            f'<div class="tm-metric-value">{value}</div>'
+            f'<div class="tm-metric-sub">{sub}</div>'
+            f'<div class="tm-metric-scale">{scale}</div></div>'
+        )
+    cards.append("</div>")
+    st.markdown("".join(cards), unsafe_allow_html=True)
+
+
+def render_technical_metrics(metrics: dict):
+    cards = ['<div class="tm-metric-grid">']
+    for key, (label, arrow, desc) in TECHNICAL_METRICS.items():
+        v = metrics.get(key)
+        if _is_missing(v):
+            continue
+        val = f"{v:.1f}" if key == "calinski_harabasz" else f"{v:.2f}"
+        better = "higher is better" if arrow == "↑" else "lower is better"
+        cards.append(
+            f'<div class="tm-metric"><div class="tm-metric-label">{label}</div>'
+            f'<div class="tm-metric-value">{val}</div>'
+            f'<div class="tm-metric-sub">{desc}</div>'
+            f'<div class="tm-metric-scale">{arrow} {better}</div></div>'
         )
     cards.append("</div>")
     st.markdown("".join(cards), unsafe_allow_html=True)
@@ -276,19 +314,25 @@ def _reset():
         st.session_state.pop(key, None)
 
 
-def _run_model(model_key, feature_key, k, preferred_size):
+def _run_model(model_key, feature_key, k, balance):
     feats = st.session_state.feature_sets
     X = feats[feature_key]
     if model_key == "hungarian":
-        # team_size is derived internally as N // k (tested behavior); k drives size.
-        return models.hungarian_teams(X, k=k)
-    if model_key == "kmeans":
-        return models.kmeans_teams(X, k=k)
-    if model_key == "agglomerative":
-        return models.agglomerative_teams(X, k=k)
-    if model_key == "gmm":
-        return models.gmm_teams(X, k=k)
-    raise ValueError(f"Unknown model: {model_key}")
+        result = models.hungarian_teams(X, k=k)
+    elif model_key == "kmeans":
+        result = models.kmeans_teams(X, k=k)
+    elif model_key == "agglomerative":
+        result = models.agglomerative_teams(X, k=k)
+    elif model_key == "gmm":
+        result = models.gmm_teams(X, k=k)
+    else:
+        raise ValueError(f"Unknown model: {model_key}")
+
+    # Guardrail: force every team to the chosen size (±1) unless the instructor
+    # opted into natural sizes. Keeps the model's matching, fixes the size drift.
+    if balance:
+        result = models.balance_team_sizes(result, X)
+    return result
 
 
 def _build_zip(roster_df, metrics_df):
@@ -369,16 +413,33 @@ elif "result" not in st.session_state:
         help="Number of teams is derived automatically from class size and this value.",
     )
     k = models.derive_k(n, preferred_size)
-    st.caption(f"→ This will produce **{k} teams** of about {preferred_size} students each.")
 
     model_label = st.selectbox("Matching model", list(MODEL_CHOICES.keys()), index=0)
     model_key, feature_key = MODEL_CHOICES[model_label]
 
-    if model_key == "gmm":
-        st.caption(
-            "GMM groups by **complementary skills** (so team sizes may vary). "
-            "The other models optimize for **schedule/work-style compatibility**."
+    with st.expander("Advanced options"):
+        allow_natural = st.checkbox(
+            "Allow natural (uneven) team sizes",
+            value=False,
+            help="By default every team is the same size (±1 for the remainder). "
+                 "Check this to let the clustering model set sizes — teams may "
+                 "then range more widely.",
         )
+    balance = not allow_natural
+
+    # Show the team sizes the instructor will actually get, up front.
+    if balance:
+        caps = models.balanced_capacities(n, k)
+        clo, chi = min(caps), max(caps)
+        cap_desc = f"{clo}" if clo == chi else f"{clo}–{chi}"
+        st.caption(f"→ **{k} teams** of {cap_desc} students each.")
+    else:
+        st.caption(f"→ About **{k} teams**; sizes are set by the model and may be uneven.")
+
+    if model_key == "gmm":
+        tail = ("Team sizes are still kept even." if balance
+                else "With natural sizes on, GMM team sizes may vary widely.")
+        st.caption(f"GMM groups students by **complementary skills**. {tail}")
 
     c1, c2 = st.columns([1, 1])
     with c1:
@@ -389,7 +450,7 @@ elif "result" not in st.session_state:
                 st.session_state.feature_sets = feature_sets
                 st.session_state.ids = ids
                 st.session_state.result = _run_model(
-                    model_key, feature_key, k, preferred_size
+                    model_key, feature_key, k, balance
                 )
                 st.session_state.feature_key = feature_key
                 st.session_state.model_label = model_label
@@ -427,26 +488,40 @@ else:
     }).sort_values(["team", "student_id"]).reset_index(drop=True)
 
     sizes = result.team_sizes()
-    size_str = ", ".join(f"{v}" for v in sorted(sizes.values(), reverse=True))
+    size_vals = sorted(sizes.values())
+    lo, hi = size_vals[0], size_vals[-1]
+    size_desc = f"{lo}" if lo == hi else f"{lo}–{hi}"
+    size_word = "even" if (hi - lo) <= 1 else "uneven"
 
     # Metrics (computed first so the banner can surface schedule overlap)
     X = st.session_state.feature_sets[feature_key]
     metrics = evaluate.evaluate(X, processed, result)
+    n_skills = len([c for c in evaluate.SKILL_COLS if c in processed.columns]) \
+        or len(evaluate.SKILL_COLS)
 
     overlap = metrics.get("schedule_overlap")
-    overlap_txt = f" · avg schedule overlap <strong>{overlap:.2f}</strong>" if overlap is not None else ""
+    overlap_txt = ""
+    if not _is_missing(overlap):
+        overlap_txt = f" · <strong>{overlap * 100:.0f}%</strong> avg schedule overlap"
     st.markdown(
-        f'<div class="tm-banner"><strong>{result.k} balanced teams</strong> formed · '
-        f'sizes {size_str}{overlap_txt}</div>',
+        f'<div class="tm-banner"><strong>{result.k} teams</strong> formed · '
+        f'sizes {size_desc} ({size_word}){overlap_txt}</div>',
         unsafe_allow_html=True,
     )
 
     render_team_cards(roster)
     render_team_chart(roster)
 
-    with st.expander("Quality metrics", expanded=True):
-        render_metric_cards(metrics)
-        st.caption("↑ higher is better · ↓ lower is better · ↕ depends on objective")
+    st.markdown('<div class="tm-section">What this means for your teams</div>',
+                unsafe_allow_html=True)
+    render_friendly_metrics(metrics, n_skills)
+
+    with st.expander("Technical clustering metrics"):
+        render_technical_metrics(metrics)
+        st.caption(
+            "Diagnostics from the clustering step — handy for comparing models, "
+            "not required reading. Forcing even team sizes can lower these slightly."
+        )
 
     # Downloads
     download_roster = roster.copy()

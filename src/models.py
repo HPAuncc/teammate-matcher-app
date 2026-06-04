@@ -115,6 +115,93 @@ def validate_n(n: int) -> List[str]:
     return warnings_list
 
 
+# ── Size guardrails: honor a target team size across ANY model ────────────────
+# K-Means, Agglomerative, and GMM cluster purely by similarity and have no notion
+# of team size, so raw cluster sizes drift (instructors reported teams of 2–6 when
+# they asked for 3–4). These helpers re-distribute members so every team lands at
+# the chosen size (±1 for the unavoidable remainder) while keeping each team's
+# centre of gravity — i.e. the model still decides *who groups with whom*; the
+# guardrail only enforces *how many*.
+
+def balanced_capacities(n: int, k: int) -> List[int]:
+    """
+    Split ``n`` students into ``k`` teams as evenly as possible.
+
+    Returns k capacities summing to n, each equal to ⌊n/k⌋ or ⌈n/k⌉, so no two
+    teams differ in size by more than one. The first ``n % k`` teams get the
+    extra member.
+
+    >>> balanced_capacities(31, 8)
+    [4, 4, 4, 4, 4, 4, 4, 3]
+    >>> balanced_capacities(20, 4)
+    [5, 5, 5, 5]
+    """
+    if k <= 0:
+        raise ValueError("k must be a positive integer")
+    base, rem = divmod(n, k)
+    return [base + 1] * rem + [base] * (k - rem)
+
+
+def _assign_to_capacities(X_arr: np.ndarray, centroids: np.ndarray,
+                          capacities: List[int]) -> np.ndarray:
+    """
+    Optimally assign every row of ``X_arr`` to a team subject to fixed per-team
+    capacities, via the Hungarian algorithm on a capacity-expanded cost matrix.
+
+    Each team column is replicated ``capacities[j]`` times so the assignment
+    matrix is square (N × N); ``sum(capacities)`` must equal ``len(X_arr)``.
+    Returns 0-indexed team labels (one per row of X_arr).
+    """
+    n = X_arr.shape[0]
+    if sum(capacities) != n:
+        raise ValueError("capacities must sum to the number of students")
+    cost = cdist(X_arr, centroids, metric="euclidean")            # (N, k)
+    col_team = np.repeat(np.arange(len(capacities)), capacities)   # (N,) col → team
+    expanded = cost[:, col_team]                                   # (N, N)
+    row_ind, col_ind = linear_sum_assignment(expanded)
+    labels = np.empty(n, dtype=int)
+    labels[row_ind] = col_team[col_ind]
+    return labels
+
+
+def balance_team_sizes(result: "TeamingResult", X) -> "TeamingResult":
+    """
+    Re-assign students so every team is the same size (±1 for the remainder),
+    while preserving the matching criteria the chosen model produced.
+
+    The model has already grouped students by similarity / complementarity; this
+    keeps each cluster's centroid but reshuffles members at the margins so the
+    instructor's chosen team size is actually honored — the guardrail the pure
+    clustering models (K-Means, Agglomerative, GMM) otherwise lack.
+
+    Returns a NEW TeamingResult; the original is left untouched.
+    """
+    X_arr = _to_array(X)
+    n = X_arr.shape[0]
+    labels = np.asarray(result.labels)
+
+    # Prefer the model's own centroids; fall back to GMM means, then member means.
+    centroids = result.meta.get("centroids")
+    if centroids is None or len(centroids) != result.k:
+        centroids = result.meta.get("means")
+    if centroids is None or len(centroids) != result.k:
+        uniq = np.unique(labels[labels >= 0])
+        centroids = np.vstack([X_arr[labels == u].mean(axis=0) for u in uniq])
+    centroids = np.asarray(centroids, dtype=float)
+    k = len(centroids)
+
+    caps = balanced_capacities(n, k)
+    new_labels = _assign_to_capacities(X_arr, centroids, caps)
+
+    return TeamingResult(
+        model_name=result.model_name,
+        labels=new_labels,
+        k=k,
+        model_obj=result.model_obj,
+        meta={**result.meta, "size_balanced": True, "capacities": caps},
+    )
+
+
 def _select_k_silhouette(X: np.ndarray, k_range=(2, 8),
                           random_state=42) -> int:
     """
