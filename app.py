@@ -338,7 +338,8 @@ def _skill_chart(labels, levels, color):
         alt.Chart(sdf)
         .mark_bar(cornerRadiusEnd=4, color=color)
         .encode(
-            y=alt.Y("skill:N", sort=labels, title=None),
+            y=alt.Y("skill:N", sort=labels, title=None,
+                    axis=alt.Axis(labelOverlap=False, labelLimit=200, labelFontSize=12)),
             x=alt.X("level:Q", title="Strongest member’s level (%)",
                     scale=alt.Scale(domain=[0, 100])),
             tooltip=[alt.Tooltip("skill:N", title="Skill"),
@@ -352,7 +353,7 @@ def _skill_chart(labels, levels, color):
     )
     return (
         (bars + rule)
-        .properties(height=24 * len(labels) + 24)
+        .properties(height=34 * len(labels) + 20)
         .configure_view(strokeWidth=0)
         .configure_axis(grid=False, labelColor=MUTED, titleColor=MUTED)
     )
