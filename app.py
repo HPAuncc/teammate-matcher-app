@@ -448,25 +448,64 @@ def render_team_cards(roster: pd.DataFrame):
     st.markdown("".join(cards), unsafe_allow_html=True)
 
 
-def render_team_chart(roster: pd.DataFrame):
-    chart_df = (
-        roster["team"].value_counts().sort_index().rename_axis("team").reset_index(name="students")
-    )
-    chart_df["team"] = chart_df["team"].astype(str)
-    domain = chart_df["team"].tolist()
-    rng = [TEAM_PALETTE[(int(t) - 1) % len(TEAM_PALETTE)] for t in domain]
-    chart = (
-        alt.Chart(chart_df)
-        .mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, size=38)
-        .encode(
-            x=alt.X("team:N", title="Team", sort=domain, axis=alt.Axis(labelAngle=0)),
-            y=alt.Y("students:Q", title="Students"),
-            color=alt.Color("team:N", scale=alt.Scale(domain=domain, range=rng), legend=None),
-            tooltip=[alt.Tooltip("team:N", title="Team"), alt.Tooltip("students:Q", title="Students")],
+def render_overlap_overview(processed, result, class_metrics):
+    """At-a-glance schedule-overlap-by-team bars with the class-average line.
+
+    Replaces the old students-per-team chart (now uninformative since team sizes
+    are enforced even). Bars below the class average are colored red so the teams
+    that may struggle to meet stand out before you drill into their tab.
+    """
+    cls = class_metrics.get("schedule_overlap")
+    cls_pct = None if _is_missing(cls) else cls * 100
+
+    rows = []
+    for t in range(result.k):
+        ov = evaluate.team_schedule_overlap(processed, result, t)
+        if _is_missing(ov):
+            continue
+        rows.append({"team": str(t + 1), "overlap": ov * 100})
+    if not rows:
+        return
+    df = pd.DataFrame(rows)
+    order = [str(i + 1) for i in range(result.k)]
+
+    if cls_pct is not None:
+        df["status"] = np.where(df["overlap"] >= cls_pct,
+                                "At/above class avg", "Below class avg")
+        color = alt.Color(
+            "status:N",
+            scale=alt.Scale(domain=["At/above class avg", "Below class avg"],
+                            range=[EMERALD, "#DC2626"]),
+            legend=alt.Legend(title=None, orient="top"),
         )
-        .properties(height=240)
+    else:
+        color = alt.value(BLUE)
+
+    bars = (
+        alt.Chart(df)
+        .mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5)
+        .encode(
+            x=alt.X("team:N", title="Team", sort=order, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("overlap:Q", title="Schedule overlap (%)",
+                    scale=alt.Scale(domain=[0, 100])),
+            color=color,
+            tooltip=[alt.Tooltip("team:N", title="Team"),
+                     alt.Tooltip("overlap:Q", title="Overlap", format=".0f")],
+        )
+    )
+    layers = [bars]
+    if cls_pct is not None:
+        layers.append(
+            alt.Chart(pd.DataFrame({"y": [cls_pct]}))
+            .mark_rule(color="#475569", strokeDash=[5, 4], size=2)
+            .encode(y="y:Q")
+        )
+    chart = (
+        alt.layer(*layers)
+        .properties(height=260)
         .configure_view(strokeWidth=0)
         .configure_axis(grid=False, labelColor=MUTED, titleColor=MUTED)
+        .configure_legend(labelColor=MUTED)
     )
     st.altair_chart(chart, use_container_width=True)
 
@@ -673,7 +712,13 @@ else:
     )
 
     render_team_cards(roster)
-    render_team_chart(roster)
+
+    st.markdown('<div class="tm-section">Schedule overlap by team</div>',
+                unsafe_allow_html=True)
+    st.caption("Each team's share of shared free-time slots. The dashed line is the "
+               "class average; red bars fall below it — those teams may struggle to "
+               "meet. Open a team's tab below for the details.")
+    render_overlap_overview(processed, result, metrics)
 
     st.markdown('<div class="tm-section">What this means for your teams</div>',
                 unsafe_allow_html=True)
