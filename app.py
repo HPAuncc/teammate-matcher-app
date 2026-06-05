@@ -224,12 +224,15 @@ def _friendly_card(key: str, value: float, n_skills: int):
                 "0% = no common time · 100% = identical availability")
     if key == "skill_coverage":
         return ("Skill coverage", f"{value:.1f} of {n_skills}",
-                "Skill areas with at least one capable member per team.",
-                f"out of {n_skills} surveyed skill areas")
+                "Skill areas where each team has a capable member (rated 3+ of 5).",
+                f"higher is better · {n_skills} of {n_skills} = every skill covered")
     if key == "skill_variance":
-        return ("Skill diversity", f"{value:.2f}",
-                "Spread of skill levels within each team.",
-                "higher = a more complementary mix")
+        # Raw value is a within-team std of 0–1 skills, so it maxes out at 0.5.
+        # Rescale to 0–100% so the card carries its own range like the others.
+        pct = max(0.0, min(100.0, value / 0.5 * 100))
+        return ("Skill diversity", f"{pct:.0f}%",
+                "How much teammates' skill levels vary within a team.",
+                "0% = identical skill levels · 100% = very mixed")
     return (key, f"{value:.2f}", "", "")
 
 
