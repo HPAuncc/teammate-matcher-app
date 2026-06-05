@@ -15,6 +15,7 @@ Run locally:  streamlit run app.py
 
 import base64
 import io
+import json
 import os
 import zipfile
 
@@ -43,6 +44,17 @@ TEAM_PALETTE = [
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGO_PATH = os.path.join(APP_DIR, "assets", "logo.png")
+PRESETS_PATH = os.path.join(APP_DIR, "assets", "skill_presets.json")
+
+
+@st.cache_data
+def _load_presets() -> dict:
+    """Suggested skill sets by course type (for the form's grid). {} if missing."""
+    try:
+        with open(PRESETS_PATH, encoding="utf-8") as fh:
+            return json.load(fh).get("presets", {})
+    except Exception:  # noqa: BLE001
+        return {}
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 # Force-copy link: clicking it prompts the teacher to save their OWN copy of the
@@ -574,6 +586,16 @@ Students are identified only by their **UNCC student ID** — no names. You can
 join the results back to your Canvas roster using that ID.
 """
     )
+
+    _presets = _load_presets()
+    if _presets:
+        with st.expander("💡 Building your form? Suggested skills by course type"):
+            st.caption("The survey's skill question is a 1–5 grid you tailor to your "
+                       "course — paste a set below into the grid's rows (or mix and "
+                       "match), and keep the 1–5 scale. No skills needed? Delete the "
+                       "grid and Teamora matches on schedule & work style only.")
+            for _course, _skills in _presets.items():
+                st.markdown(f"**{_course}** — {', '.join(_skills)}")
 
     st.info(
         "**Privacy.** Your file is processed in memory for this session only — "

@@ -1,0 +1,12 @@
+{
+  "_note": "Suggested skill sets for the survey's grid question, by course type. Instructors copy a set into their form (or mix and match) and keep the 1-5 scale. Used by the in-app reference and the instructor guide.",
+  "presets": {
+    "Data Science / Analytics": ["Python", "Data analysis", "Statistics", "Data visualization", "Machine learning", "Technical writing", "Research", "Presenting"],
+    "Writing / Humanities": ["Close reading", "Argumentation", "Research", "Editing", "Citation & sourcing", "Writing", "Presenting"],
+    "Lab / Natural science": ["Lab technique", "Data interpretation", "Scientific writing", "Experimental design", "Statistics", "Safety & protocol", "Presenting"],
+    "Engineering / CS": ["Programming", "CAD / modeling", "Prototyping", "Hardware / circuits", "Testing & debugging", "Technical writing", "Project planning"],
+    "Business / Marketing": ["Market research", "Financial analysis", "Writing", "Presenting", "Project management", "Data analysis", "Creative strategy"],
+    "Design / Arts": ["Concept development", "Visual design", "Prototyping", "Critique & feedback", "Software tools", "Presenting", "Writing"],
+    "General / Transferable": ["Writing", "Research", "Data analysis", "Public speaking", "Project planning", "Technical skills", "Creative design", "Critical thinking"]
+  }
+}

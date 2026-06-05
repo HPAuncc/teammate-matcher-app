@@ -15,6 +15,8 @@ tool proposes teams, you make the final call.
 ## What it does
 
 - Takes anonymous student survey responses (identified only by **UNCC student ID**).
+- **Works for any course** — set the survey's skill list to fit your subject, or
+  use no skills and match purely on schedule + work style.
 - Groups students into balanced teams using one of four models. Every model
   keeps teams the same size by default (±1 for the remainder); **Hungarian
   assignment** (the recommended default) optimizes that balance globally. You

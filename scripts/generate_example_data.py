@@ -69,9 +69,10 @@ PAIN = [
 # Skills are one Google Forms grid question; each row exports as
 # "<title> [<skill>]". The app detects the bracketed columns dynamically.
 SKILL_GRID_TITLE = "Rate your skill in each area (1–5)"
+# Neutral, transferable skills so the demo isn't tied to one discipline.
 SKILL_NAMES = [
-    "Python", "Data analysis", "Statistics", "Data visualization",
-    "Machine learning", "Technical writing", "Research", "Presenting",
+    "Writing", "Research", "Data analysis", "Public speaking",
+    "Project planning", "Technical skills", "Creative design", "Critical thinking",
 ]
 
 HEADERS = [
@@ -97,21 +98,26 @@ HEADERS = [
 ]
 
 # Three loose "archetypes" give the clustering something real to find:
-#  A: weekday/morning, strong coding + stats, early/steady workers
-#  B: evening/weekend, strong writing + presenting + research, collaborative
+#  A: weekday/morning, analytical/technical strengths, early/steady workers
+#  B: evening/weekend, communication/creative strengths, collaborative
 #  C: flexible, balanced skills, mixed work style
 ARCHETYPES = ["A"] * 8 + ["B"] * 8 + ["C"] * 8
 random.shuffle(ARCHETYPES)
 
 
 def skills_for(arch):
-    """Return the 8 skill ratings (1-5) for an archetype, with noise."""
+    """Return the 8 skill ratings (1-5) for an archetype, with noise.
+
+    Order matches SKILL_NAMES:
+    Writing, Research, Data analysis, Public speaking,
+    Project planning, Technical skills, Creative design, Critical thinking.
+    """
     def j(center):
         return max(1, min(5, center + random.choice([-1, 0, 0, 1])))
-    if arch == "A":  # technical
-        return [j(5), j(5), j(4), j(3), j(4), j(2), j(2), j(2)]
-    if arch == "B":  # communication / writing
-        return [j(2), j(3), j(2), j(3), j(2), j(5), j(5), j(5)]
+    if arch == "A":  # analytical / technical
+        return [j(2), j(3), j(5), j(2), j(4), j(5), j(2), j(4)]
+    if arch == "B":  # communication / creative
+        return [j(5), j(5), j(2), j(5), j(3), j(2), j(5), j(3)]
     return [j(3), j(3), j(3), j(3), j(3), j(3), j(3), j(3)]  # balanced
 
 

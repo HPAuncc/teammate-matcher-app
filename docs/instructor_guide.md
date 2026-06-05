@@ -57,6 +57,18 @@ themselves 1–5 on each skill. This is the part you make your own:
   skills and matches purely on **schedule and work style** — it hides the
   skills-based model and the skill charts automatically.
 
+**Need a starting point?** Copy one of these into the grid's rows (or mix and match):
+
+| Course type | Suggested skill rows |
+|---|---|
+| Data Science / Analytics | Python, Data analysis, Statistics, Data visualization, Machine learning, Technical writing, Research, Presenting |
+| Writing / Humanities | Close reading, Argumentation, Research, Editing, Citation & sourcing, Writing, Presenting |
+| Lab / Natural science | Lab technique, Data interpretation, Scientific writing, Experimental design, Statistics, Safety & protocol, Presenting |
+| Engineering / CS | Programming, CAD / modeling, Prototyping, Hardware / circuits, Testing & debugging, Technical writing, Project planning |
+| Business / Marketing | Market research, Financial analysis, Writing, Presenting, Project management, Data analysis, Creative strategy |
+| Design / Arts | Concept development, Visual design, Prototyping, Critique & feedback, Software tools, Presenting, Writing |
+| General / Transferable | Writing, Research, Data analysis, Public speaking, Project planning, Technical skills, Creative design, Critical thinking |
+
 ---
 
 ## Step 1 — Collect responses
