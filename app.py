@@ -724,6 +724,14 @@ else:
                 unsafe_allow_html=True)
     render_friendly_metrics(metrics, n_skills)
 
+    with st.expander("Technical clustering metrics"):
+        render_technical_metrics(metrics)
+        st.caption(
+            "Class-wide diagnostics from the clustering step (the same for every "
+            "team) — handy for comparing models, not required reading. Forcing "
+            "even team sizes can lower these slightly."
+        )
+
     st.markdown('<div class="tm-section">Team-by-team breakdown</div>',
                 unsafe_allow_html=True)
     st.caption("Pick a team to see its own scores, when it can meet, and which "
@@ -732,13 +740,6 @@ else:
     for tab, t in zip(st.tabs([f"Team {t}" for t in team_ids]), team_ids):
         with tab:
             render_team_detail(processed, result, ids, int(t), n_skills, metrics)
-
-    with st.expander("Technical clustering metrics"):
-        render_technical_metrics(metrics)
-        st.caption(
-            "Diagnostics from the clustering step — handy for comparing models, "
-            "not required reading. Forcing even team sizes can lower these slightly."
-        )
 
     # Downloads
     download_roster = roster.copy()
