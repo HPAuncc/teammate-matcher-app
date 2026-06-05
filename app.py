@@ -67,13 +67,8 @@ TECHNICAL_METRICS = {
     "calinski_harabasz": ("Calinski–Harabasz", "↑", "Between- vs. within-team spread."),
 }
 
-# Friendly labels for the per-team drill-down charts.
-SKILL_LABELS = {
-    "skill_python": "Python", "skill_data_analysis": "Data analysis",
-    "skill_statistics": "Statistics", "skill_visualization": "Visualization",
-    "skill_ml": "ML", "skill_writing": "Writing",
-    "skill_research": "Research", "skill_presenting": "Presenting",
-}
+# Labels for the per-team drill-down charts. Skill labels come from the data
+# (preprocess.skill_label) so any course's skills render; availability is fixed.
 DAY_LABELS = {
     "avail_mon": "Mon", "avail_tue": "Tue", "avail_wed": "Wed", "avail_thu": "Thu",
     "avail_fri": "Fri", "avail_sat": "Sat", "avail_sun": "Sun",
@@ -366,13 +361,11 @@ def render_team_detail(processed, result, ids, team_no, n_skills, class_metrics)
     rows = np.where(result.labels == team_idx)[0]
     members = [str(m) for m in ids.values[rows]]
     size = len(rows)
+    skill_cols = preprocess.skill_columns(processed)
+    has_skills = len(skill_cols) > 0
 
     ov = evaluate.team_schedule_overlap(processed, result, team_idx)
-    cov = evaluate.team_skill_coverage(processed, result, team_idx)
-    div = evaluate.team_skill_diversity(processed, result, team_idx)
     ov_cls = class_metrics.get("schedule_overlap")
-    cov_cls = class_metrics.get("skill_coverage")
-    div_cls = class_metrics.get("skill_variance")
 
     cards = ['<div class="tm-metric-grid">']
     cards.append(_metric_card_html(
@@ -382,20 +375,25 @@ def render_team_detail(processed, result, ids, team_no, n_skills, class_metrics)
         else _cmp_line(ov * 100, None if _is_missing(ov_cls) else ov_cls * 100, "%", True),
         "0–100%",
     ))
-    cards.append(_metric_card_html(
-        "Skill coverage",
-        "—" if _is_missing(cov) else f"{int(cov)} of {n_skills}",
-        "" if _is_missing(cov)
-        else _cmp_line(cov, cov_cls, f" of {n_skills}", True, fmt="{:.1f}"),
-        f"0–{n_skills}",
-    ))
-    cards.append(_metric_card_html(
-        "Skill diversity",
-        "—" if _is_missing(div) else f"{div / 0.5 * 100:.0f}%",
-        "needs 2+ members" if _is_missing(div)
-        else _cmp_line(div / 0.5 * 100, None if _is_missing(div_cls) else div_cls / 0.5 * 100, "%", None),
-        "0–100%",
-    ))
+    if has_skills:
+        cov = evaluate.team_skill_coverage(processed, result, team_idx)
+        div = evaluate.team_skill_diversity(processed, result, team_idx)
+        cov_cls = class_metrics.get("skill_coverage")
+        div_cls = class_metrics.get("skill_variance")
+        cards.append(_metric_card_html(
+            "Skill coverage",
+            "—" if _is_missing(cov) else f"{int(cov)} of {n_skills}",
+            "" if _is_missing(cov)
+            else _cmp_line(cov, cov_cls, f" of {n_skills}", True, fmt="{:.1f}"),
+            f"0–{n_skills}",
+        ))
+        cards.append(_metric_card_html(
+            "Skill diversity",
+            "—" if _is_missing(div) else f"{div / 0.5 * 100:.0f}%",
+            "needs 2+ members" if _is_missing(div)
+            else _cmp_line(div / 0.5 * 100, None if _is_missing(div_cls) else div_cls / 0.5 * 100, "%", None),
+            "0–100%",
+        ))
     cards.append("</div>")
     st.markdown("".join(cards), unsafe_allow_html=True)
 
@@ -421,13 +419,12 @@ def render_team_detail(processed, result, ids, team_no, n_skills, class_metrics)
                     _avail_chart([TIME_LABELS[c] for c in time_cols], tcounts, color, size, "Time of day"),
                     use_container_width=True)
 
-    skill_cols = [c for c in SKILL_LABELS if c in processed.columns]
     if skill_cols:
         st.markdown('<div class="tm-subhead">Skill coverage — bars past the dashed '
                     'line have a capable member</div>', unsafe_allow_html=True)
         levels = processed[skill_cols].values[rows].max(axis=0) * 100
         st.altair_chart(
-            _skill_chart([SKILL_LABELS[c] for c in skill_cols], levels, color),
+            _skill_chart([preprocess.skill_label(c) for c in skill_cols], levels, color),
             use_container_width=True)
 
 
@@ -514,6 +511,14 @@ def render_overlap_overview(processed, result, class_metrics):
 def _reset():
     for key in ("df_raw", "source_name", "result", "processed", "feature_sets", "ids"):
         st.session_state.pop(key, None)
+
+
+def _has_skills(df_raw) -> bool:
+    """Cheap pre-check (before full processing): does this upload include skills?"""
+    try:
+        return len(preprocess.skill_columns(preprocess.clean(df_raw))) > 0
+    except Exception:  # noqa: BLE001 — detection must never block the upload
+        return True
 
 
 def _run_model(model_key, feature_key, k, balance):
@@ -610,14 +615,22 @@ elif "result" not in st.session_state:
     for msg in models.validate_n(n):
         st.warning(msg)
 
+    has_skills = _has_skills(df_raw)
+    if not has_skills:
+        st.info("No skill questions detected in this file — Teamora will match on "
+                "**schedule and work style** only.", icon="🗓️")
+
     preferred_size = st.slider(
         "Preferred team size", min_value=3, max_value=6, value=4,
         help="Number of teams is derived automatically from class size and this value.",
     )
     k = models.derive_k(n, preferred_size)
 
-    model_label = st.selectbox("Matching model", list(MODEL_CHOICES.keys()), index=0)
-    model_key, feature_key = MODEL_CHOICES[model_label]
+    # Drop the skill-complementarity model (GMM) when the survey has no skills.
+    model_choices = {kk: vv for kk, vv in MODEL_CHOICES.items()
+                     if has_skills or vv[0] != "gmm"}
+    model_label = st.selectbox("Matching model", list(model_choices.keys()), index=0)
+    model_key, feature_key = model_choices[model_label]
 
     with st.expander("Advanced options"):
         allow_natural = st.checkbox(
@@ -698,8 +711,7 @@ else:
     # Metrics (computed first so the banner can surface schedule overlap)
     X = st.session_state.feature_sets[feature_key]
     metrics = evaluate.evaluate(X, processed, result)
-    n_skills = len([c for c in evaluate.SKILL_COLS if c in processed.columns]) \
-        or len(evaluate.SKILL_COLS)
+    n_skills = len(preprocess.skill_columns(processed))
 
     overlap = metrics.get("schedule_overlap")
     overlap_txt = ""

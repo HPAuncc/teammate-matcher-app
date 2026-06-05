@@ -44,6 +44,11 @@ SKILL_COLS = [
 ]
 
 
+def _skill_cols(df: pd.DataFrame) -> List[str]:
+    """Skill columns discovered by the ``skill_`` prefix (schema-driven, any course)."""
+    return [c for c in df.columns if c.startswith("skill_")]
+
+
 # ── Individual metrics ────────────────────────────────────────────────────────
 
 def silhouette(X, result: TeamingResult) -> float:
@@ -99,7 +104,7 @@ def intra_team_skill_variance(df: pd.DataFrame, result: TeamingResult,
     Returns the mean across all teams and all skill dimensions.
     """
     if skill_cols is None:
-        skill_cols = [c for c in SKILL_COLS if c in df.columns]
+        skill_cols = _skill_cols(df)
     if not skill_cols:
         return np.nan
 
@@ -164,7 +169,7 @@ def skill_coverage_score(df: pd.DataFrame, result: TeamingResult,
     Returns the mean across all teams.
     """
     if skill_cols is None:
-        skill_cols = [c for c in SKILL_COLS if c in df.columns]
+        skill_cols = _skill_cols(df)
     if not skill_cols:
         return np.nan
 
@@ -214,7 +219,7 @@ def team_skill_coverage(df: pd.DataFrame, result: TeamingResult, team_idx: int,
                         threshold: float = 0.5) -> float:
     """Number of skill areas ONE team covers (a member rated ≥ threshold)."""
     if skill_cols is None:
-        skill_cols = [c for c in SKILL_COLS if c in df.columns]
+        skill_cols = _skill_cols(df)
     rows = _team_rows(result, team_idx)
     if not skill_cols or len(rows) == 0:
         return np.nan
@@ -226,7 +231,7 @@ def team_skill_diversity(df: pd.DataFrame, result: TeamingResult, team_idx: int,
                          skill_cols: Optional[List[str]] = None) -> float:
     """Mean across skills of the within-team std for ONE team. NaN if < 2 members."""
     if skill_cols is None:
-        skill_cols = [c for c in SKILL_COLS if c in df.columns]
+        skill_cols = _skill_cols(df)
     rows = _team_rows(result, team_idx)
     if not skill_cols or len(rows) < 2:
         return np.nan

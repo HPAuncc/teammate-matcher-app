@@ -22,6 +22,28 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
+# ── Skill schema (data-driven) ────────────────────────────────────────────────
+# Skills are discovered by the ``skill_`` column prefix rather than a fixed list,
+# so Teamora works for any course's skill set (or none at all). Display labels are
+# derived from the slug, with overrides for acronyms.
+SKILL_PREFIX = "skill_"
+SKILL_LABEL_OVERRIDES = {"skill_ml": "ML"}
+
+
+def skill_columns(df):
+    """Skill feature columns present in ``df`` (anything with the ``skill_`` prefix)."""
+    return [c for c in df.columns if c.startswith(SKILL_PREFIX)]
+
+
+def skill_label(slug):
+    """Human label for a skill slug, e.g. 'skill_data_analysis' -> 'Data analysis'."""
+    if slug in SKILL_LABEL_OVERRIDES:
+        return SKILL_LABEL_OVERRIDES[slug]
+    if slug.startswith(SKILL_PREFIX):
+        return slug[len(SKILL_PREFIX):].replace("_", " ").strip().capitalize()
+    return slug
+
+
 # ── Raw column name → clean internal name ─────────────────────────────────────
 COLUMN_MAP = {
     "Timestamp"                                                        : "timestamp",
@@ -297,12 +319,18 @@ def normalize(df, exclude=None):
     if exclude is None:
         exclude = []
 
+    # Skills use a FIXED 1–5 → [0,1] mapping ((x-1)/4), not data-relative scaling,
+    # so thresholds like "capable ≥ 3 of 5" mean the same in every class.
+    skill_cols = skill_columns(df)
+    for c in skill_cols:
+        df[c] = ((pd.to_numeric(df[c], errors="coerce") - 1) / 4).clip(0, 1)
+
     # Identify columns that are already binary (only 0/1)
     binary_cols = [
         c for c in df.select_dtypes(include=[np.number]).columns
         if df[c].dropna().isin([0, 1]).all()
     ]
-    skip = set(exclude) | set(binary_cols)
+    skip = set(exclude) | set(binary_cols) | set(skill_cols)
 
     scale_cols = [
         c for c in df.select_dtypes(include=[np.number]).columns
@@ -310,9 +338,11 @@ def normalize(df, exclude=None):
     ]
 
     scaler = MinMaxScaler()
-    df[scale_cols] = scaler.fit_transform(df[scale_cols])
+    if scale_cols:
+        df[scale_cols] = scaler.fit_transform(df[scale_cols])
 
-    print(f"  [normalize] Scaled {len(scale_cols)} columns: {scale_cols}")
+    print(f"  [normalize] {len(scale_cols)} cols MinMax-scaled + "
+          f"{len(skill_cols)} skill cols fixed 1–5")
     return df
 
 
@@ -338,11 +368,7 @@ def build_feature_sets(df):
         "comm_text", "comm_email", "comm_discord", "comm_video", "comm_inperson",
         "conflict_direct", "conflict_private", "conflict_natural", "conflict_defer",
     ]
-    skill_cols = [
-        "skill_python", "skill_data_analysis", "skill_statistics",
-        "skill_visualization", "skill_ml", "skill_writing",
-        "skill_research", "skill_presenting",
-    ]
+    skill_cols = skill_columns(df)
 
     # Only keep columns that actually exist in df
     compat_cols = [c for c in availability_cols + workstyle_cols if c in df.columns]
