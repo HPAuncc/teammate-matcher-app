@@ -423,9 +423,9 @@ def render_team_detail(processed, result, ids, team_no, n_skills, class_metrics)
         st.markdown('<div class="tm-subhead">Skill coverage — bars past the dashed '
                     'line have a capable member</div>', unsafe_allow_html=True)
         levels = processed[skill_cols].values[rows].max(axis=0) * 100
-        st.altair_chart(
-            _skill_chart([preprocess.skill_label(c) for c in skill_cols], levels, color),
-            use_container_width=True)
+        labels_map = processed.attrs.get("skill_labels", {})
+        names = [labels_map.get(c) or preprocess.skill_label(c) for c in skill_cols]
+        st.altair_chart(_skill_chart(names, levels, color), use_container_width=True)
 
 
 def render_team_cards(roster: pd.DataFrame):
@@ -611,6 +611,17 @@ elif "result" not in st.session_state:
 
     with st.expander("Preview first 5 rows"):
         st.dataframe(df_raw.head(), use_container_width=True)
+
+    problems = preprocess.validate_raw(df_raw)
+    if problems:
+        for pb in problems:
+            st.error(pb)
+        st.info("Use the Teamora form template and edit only the skill-grid rows — "
+                "don't rename or remove the other questions.")
+        if st.button("Start over"):
+            _reset()
+            st.rerun()
+        st.stop()
 
     for msg in models.validate_n(n):
         st.warning(msg)

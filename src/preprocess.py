@@ -18,6 +18,8 @@ Pipeline steps:
   10. Feature set construction
 """
 
+import re
+
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -44,6 +46,34 @@ def skill_label(slug):
     return slug
 
 
+# Skills arrive as one Google Forms "grid" question: each row exports as a column
+# "<grid title> [<skill name>]". We detect those by the bracketed suffix (the only
+# grid in the template) and turn each into a skill_<slug> column, preserving the
+# instructor's exact row label for display.
+_SKILL_GRID_RE = re.compile(r"\[(.+?)\]\s*$")
+
+
+def _slugify(label):
+    slug = re.sub(r"[^0-9a-z]+", "_", str(label).strip().lower()).strip("_")
+    return slug or "skill"
+
+
+def _grid_skill_map(columns):
+    """From raw column names, return (rename: raw->slug, labels: slug->row label)."""
+    rename, labels = {}, {}
+    for col in columns:
+        s = str(col)
+        if s.startswith(SKILL_PREFIX):
+            continue
+        m = _SKILL_GRID_RE.search(s)
+        if m:
+            label = m.group(1).strip()
+            slug = SKILL_PREFIX + _slugify(label)
+            rename[col] = slug
+            labels[slug] = label
+    return rename, labels
+
+
 # ── Raw column name → clean internal name ─────────────────────────────────────
 COLUMN_MAP = {
     "Timestamp"                                                        : "timestamp",
@@ -54,14 +84,8 @@ COLUMN_MAP = {
     "What time(s) of day are you available?"                           : "_times_raw",
     "How many hours per week can you realistically dedicate to group project work?": "weekly_hours",
     "Do you prefer to meet in person or remotely?"                     : "meeting_mode",
-    "Python / programming"                                             : "skill_python",
-    "Data analysis (pandas, spreadsheets, SQL)"                        : "skill_data_analysis",
-    "Statistics and math"                                              : "skill_statistics",
-    "Data visualization (matplotlib, Tableau, etc.)"                   : "skill_visualization",
-    "Machine learning / modeling"                                      : "skill_ml",
-    "Technical writing and documentation"                              : "skill_writing",
-    "Research and literature review"                                   : "skill_research",
-    "Presentations and public speaking"                                : "skill_presenting",
+    # Skills are NOT mapped here — they come from one editable grid question and
+    # are detected dynamically (see _grid_skill_map / clean).
     "What role do you naturally gravitate toward in a group?"          : "role_pref",
     "How do you typically approach deadlines?"                         : "deadline_style",
     "How do you prefer to communicate with your team? (pick primary)"  : "comm_pref",
@@ -184,6 +208,10 @@ def clean(df):
 
     # Rename known columns; silently drop unknown extra columns (e.g., Column 25)
     df = df.rename(columns={k: v for k, v in COLUMN_MAP.items() if k in df.columns})
+
+    # Skills: one grid question → one skill_<slug> column per row label.
+    grid_rename, _ = _grid_skill_map(df.columns)
+    df = df.rename(columns=grid_rename)
 
     # Drop artifact columns from Google Forms
     drop_cols = [c for c in df.columns if c.startswith("Column") or c == "timestamp"]
@@ -381,6 +409,36 @@ def build_feature_sets(df):
     }
 
 
+# Fixed (non-skill) questions the pipeline needs. Skills are optional.
+REQUIRED_COLS = [
+    "student_id", "_days_raw", "_times_raw", "year", "weekly_hours",
+    "meeting_mode", "role_pref", "deadline_style", "comm_pref", "checkin_freq",
+    "collab_style", "conflict_style", "gpa_band", "_contrib_raw", "pain_point",
+]
+
+
+def validate_raw(df_raw):
+    """
+    Return a list of human-readable problems with an uploaded CSV (empty = OK).
+
+    Checks that the fixed template questions are present. Skills are optional —
+    a file with no skill grid simply runs in schedule-only mode.
+    """
+    try:
+        cleaned = clean(df_raw)
+    except Exception as e:  # noqa: BLE001
+        return [f"The file could not be read ({e})."]
+    rev = {v: k for k, v in COLUMN_MAP.items()}
+    missing = [rev.get(c, c) for c in REQUIRED_COLS if c not in cleaned.columns]
+    problems = []
+    if missing:
+        problems.append(
+            "These expected questions are missing or were renamed: "
+            + "; ".join(f'"{m}"' for m in missing)
+        )
+    return problems
+
+
 def process_dataframe(df_raw, id_col="student_id"):
     """
     In-memory preprocessing for the web app.
@@ -422,6 +480,11 @@ def process_dataframe(df_raw, id_col="student_id"):
     else:
         # No identifier column found — fall back to row labels so the app still works
         ids = pd.Series([f"row_{i + 1}" for i in range(len(df))], name=id_col)
+
+    # Carry the instructor's own skill labels (from the grid row names) so the UI
+    # can show them verbatim. Stored on the final df so it survives to the app.
+    _, skill_labels = _grid_skill_map(df_raw.columns)
+    df.attrs["skill_labels"] = skill_labels
 
     feature_sets = build_feature_sets(df)
     return df, feature_sets, ids

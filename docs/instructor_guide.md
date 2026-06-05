@@ -31,9 +31,31 @@ official template so the columns line up with the tool:
     instead of submitting twice.
   - Keep the **UNCC student ID** question required — it's how teams map back to
     your roster.
-  - Don't rename the questions. The tool matches them by their exact wording.
+  - Don't rename the fixed questions — the tool matches them by their exact
+    wording. The **one part you *should* customize is the skills grid** (see
+    "Tailor the skills to your course" below).
 
 Aim for **at least 9 responses** (ideally 20+) for the matching to be meaningful.
+
+---
+
+## Tailor the skills to your course
+
+The survey includes **one skill question — a grid** where students rate
+themselves 1–5 on each skill. This is the part you make your own:
+
+- **Edit the grid's rows** to the skills that matter for *your* course — e.g. a
+  writing seminar: *Close reading, Argumentation, Editing, Research*; an
+  engineering course: *CAD, Circuits, Prototyping, Lab safety*.
+- **Keep the 1–5 column scale** — the quality scores depend on it.
+- Add or remove rows freely (**5–10** works best; up to ~12). Teamora reads
+  whatever skills you put there and labels the results with your exact wording —
+  no code changes needed.
+- **Don't rename the other questions**, and don't change the grid's *columns*
+  (keep them 1–5).
+- **No skills needed?** Delete the grid entirely. Teamora detects there are no
+  skills and matches purely on **schedule and work style** — it hides the
+  skills-based model and the skill charts automatically.
 
 ---
 
@@ -63,10 +85,10 @@ You'll get a file like `Team Survey (Responses).csv`.
 4. Choose a **model**:
    - **Hungarian (recommended)** — equal-sized teams matched on schedule and
      work-style compatibility. Start here.
-   - **K-Means / Agglomerative** — also compatibility-based, but team sizes can
-     vary.
+   - **K-Means / Agglomerative** — also compatibility-based. (All models keep
+     team sizes even by default.)
    - **Gaussian Mixture** — groups by *complementary skills* so no team is
-     uniformly weak in one area (sizes vary).
+     uniformly weak in one area. (Only shown when your survey includes skills.)
 5. Click **Generate teams**.
 
 ## Step 4 — Use the results
@@ -91,9 +113,9 @@ discarded when you close the tab. Nothing is saved or logged. Student IDs are
 used only to label the output — they never affect how teams are formed.
 
 **What if I changed the survey questions?**
-The tool matches questions by their exact wording. If you rename or remove
-questions, the matching columns won't be found and you'll see an error. Keep the
-template wording, or reach out to have the tool updated.
+You're meant to customize the **skills grid** — its rows are yours to set. The
+other questions are matched by their exact wording; if one is renamed or
+removed, Teamora tells you exactly which one so you can restore it.
 
 **Can I see what it does before using real data?**
 Yes — click **Try with example data** on the upload screen to run it on a

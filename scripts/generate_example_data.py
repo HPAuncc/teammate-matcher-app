@@ -66,6 +66,14 @@ PAIN = [
     "Staying motivated",
 ]
 
+# Skills are one Google Forms grid question; each row exports as
+# "<title> [<skill>]". The app detects the bracketed columns dynamically.
+SKILL_GRID_TITLE = "Rate your skill in each area (1–5)"
+SKILL_NAMES = [
+    "Python", "Data analysis", "Statistics", "Data visualization",
+    "Machine learning", "Technical writing", "Research", "Presenting",
+]
+
 HEADERS = [
     "Timestamp",
     "What is your UNCC student ID?",
@@ -75,14 +83,7 @@ HEADERS = [
     "What time(s) of day are you available?",
     "How many hours per week can you realistically dedicate to group project work?",
     "Do you prefer to meet in person or remotely?",
-    "Python / programming",
-    "Data analysis (pandas, spreadsheets, SQL)",
-    "Statistics and math",
-    "Data visualization (matplotlib, Tableau, etc.)",
-    "Machine learning / modeling",
-    "Technical writing and documentation",
-    "Research and literature review",
-    "Presentations and public speaking",
+    *[f"{SKILL_GRID_TITLE} [{n}]" for n in SKILL_NAMES],
     "What role do you naturally gravitate toward in a group?",
     "How do you typically approach deadlines?",
     "How do you prefer to communicate with your team? (pick primary)",
