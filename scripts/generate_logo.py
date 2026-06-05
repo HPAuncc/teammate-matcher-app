@@ -1,5 +1,5 @@
 """
-generate_logo.py — builds the Teammate Matcher app mark.
+generate_logo.py — builds the Teamora app mark.
 =========================================================
 Draws a small "connected team" glyph (three linked nodes on a rounded navy
 tile) and saves it as a transparent PNG used for the browser favicon and the

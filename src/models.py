@@ -1,7 +1,7 @@
 """
 src/models.py
 -------------
-Model wrappers for the four Teammate Matcher approaches.
+Model wrappers for the four Teamora approaches.
 
   Model 1 — K-Means (similarity baseline)
   Model 2 — Agglomerative Hierarchical Clustering (Ward linkage)

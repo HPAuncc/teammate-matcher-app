@@ -1,6 +1,6 @@
-# Instructor's Guide — Teammate Matcher
+# Instructor's Guide — Teamora
 
-A step-by-step guide to forming student teams with Teammate Matcher. No
+A step-by-step guide to forming student teams with Teamora. No
 technical background needed.
 
 ---

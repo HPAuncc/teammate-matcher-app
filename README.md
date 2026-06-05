@@ -1,4 +1,4 @@
-# Teammate Matcher
+# Teamora
 
 **Form balanced student teams from a quick survey — no spreadsheets, no guesswork.**
 
@@ -7,7 +7,7 @@ you upload the responses and get balanced teams optimized for compatible
 schedules and work styles (or complementary skills). You stay in control — the
 tool proposes teams, you make the final call.
 
-> 🔗 **Live app:** https://teammate-matcher.streamlit.app
+> 🔗 **Live app:** https://teamora.streamlit.app
 > 🧪 Built on the [`teammate-matcher`](../teammate-matcher) research project (DTSC 2302 capstone).
 
 ---

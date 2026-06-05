@@ -1,7 +1,7 @@
 """
 src/evaluate.py
 ---------------
-Evaluation metrics for all four Teammate Matcher models.
+Evaluation metrics for all four Teamora models.
 
 Metrics computed:
   1. Silhouette Score           — cluster cohesion vs. separation (higher = better)

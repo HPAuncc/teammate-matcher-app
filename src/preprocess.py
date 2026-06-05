@@ -1,7 +1,7 @@
 """
 src/preprocess.py
 -----------------
-Full preprocessing pipeline for the Teammate Matcher survey data.
+Full preprocessing pipeline for the Teamora survey data.
 Input:  data/raw_survey_responses.csv  (Google Forms export)
 Output: data/processed_survey_data.csv
 
@@ -408,7 +408,7 @@ def run_pipeline(raw_path="data/raw_survey_responses.csv",
     Returns (processed_df, feature_sets_dict).
     """
     print("=" * 55)
-    print("Teammate Matcher — Preprocessing Pipeline")
+    print("Teamora — Preprocessing Pipeline")
     print("=" * 55)
 
     print("\n[1] Loading raw data...")

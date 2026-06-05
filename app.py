@@ -1,7 +1,7 @@
 """
-app.py — Teammate Matcher (instructor-facing web app)
+app.py — Teamora (instructor-facing web app)
 =====================================================
-A Streamlit UI over the Teammate Matcher ML pipeline. Instructors upload a
+A Streamlit UI over the Teamora ML pipeline. Instructors upload a
 Google Forms CSV of anonymous student survey responses (identified only by UNCC
 student ID), pick a matching model and team size, and download balanced team
 assignments.
@@ -91,7 +91,7 @@ try:
 except Exception:  # noqa: BLE001
     _PAGE_ICON = "🧩"
 
-st.set_page_config(page_title="Teammate Matcher", page_icon=_PAGE_ICON, layout="centered")
+st.set_page_config(page_title="Teamora", page_icon=_PAGE_ICON, layout="centered")
 
 
 # ── Styling ────────────────────────────────────────────────────────────────────
@@ -192,7 +192,7 @@ def render_hero():
         <div class="tm-hero">
             {img}
             <div>
-                <p class="tm-title">Teammate Matcher</p>
+                <p class="tm-title">Teamora</p>
                 <p class="tm-tagline">Form balanced student teams from a quick survey — built for UNC Charlotte instructors.</p>
             </div>
         </div>
@@ -223,7 +223,7 @@ def render_footer():
     st.markdown(
         """
         <div class="tm-footer">
-            Teammate Matcher · A student data-science project, built for UNC Charlotte instructors.<br/>
+            Teamora · A student data-science project, built for UNC Charlotte instructors.<br/>
             Not affiliated with, endorsed by, or an official tool of UNC Charlotte. Files are processed in memory only — nothing is stored.
         </div>
         """,
@@ -749,7 +749,7 @@ else:
     st.download_button(
         "⬇ Download results (.zip)",
         data=_build_zip(download_roster, download_metrics),
-        file_name="teammate_matcher_results.zip",
+        file_name="teamora_results.zip",
         mime="application/zip",
         type="primary",
     )
