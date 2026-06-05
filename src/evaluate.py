@@ -181,6 +181,59 @@ def skill_coverage_score(df: pd.DataFrame, result: TeamingResult,
     return float(np.mean(coverages)) if coverages else np.nan
 
 
+# ── Per-team metrics (single team, for the instructor drill-down) ─────────────
+# The functions above summarise the whole class; these return the same three
+# instructor-facing numbers for ONE team so the UI can show a per-team breakdown.
+
+def _team_rows(result: TeamingResult, team_idx: int) -> np.ndarray:
+    return np.where(result.labels == team_idx)[0]
+
+
+def team_schedule_overlap(df: pd.DataFrame, result: TeamingResult, team_idx: int,
+                          avail_cols: Optional[List[str]] = None) -> float:
+    """Mean pairwise availability Jaccard within ONE team. NaN if < 2 members."""
+    if avail_cols is None:
+        avail_cols = [c for c in AVAIL_COLS if c in df.columns]
+    rows = _team_rows(result, team_idx)
+    if not avail_cols or len(rows) < 2:
+        return np.nan
+    avail = df[avail_cols].values.astype(float)[rows]
+    sims = []
+    for i in range(len(rows)):
+        for j in range(i + 1, len(rows)):
+            a, b = avail[i], avail[j]
+            intersection = np.sum(a * b)
+            union = np.sum(np.clip(a + b, 0, 1))
+            if union > 0:
+                sims.append(intersection / union)
+    return float(np.mean(sims)) if sims else np.nan
+
+
+def team_skill_coverage(df: pd.DataFrame, result: TeamingResult, team_idx: int,
+                        skill_cols: Optional[List[str]] = None,
+                        threshold: float = 0.5) -> float:
+    """Number of skill areas ONE team covers (a member rated ≥ threshold)."""
+    if skill_cols is None:
+        skill_cols = [c for c in SKILL_COLS if c in df.columns]
+    rows = _team_rows(result, team_idx)
+    if not skill_cols or len(rows) == 0:
+        return np.nan
+    ts = df[skill_cols].values[rows]
+    return int(np.sum(ts.max(axis=0) >= threshold))
+
+
+def team_skill_diversity(df: pd.DataFrame, result: TeamingResult, team_idx: int,
+                         skill_cols: Optional[List[str]] = None) -> float:
+    """Mean across skills of the within-team std for ONE team. NaN if < 2 members."""
+    if skill_cols is None:
+        skill_cols = [c for c in SKILL_COLS if c in df.columns]
+    rows = _team_rows(result, team_idx)
+    if not skill_cols or len(rows) < 2:
+        return np.nan
+    ts = df[skill_cols].values[rows]
+    return float(np.std(ts, axis=0).mean())
+
+
 # ── Full evaluation report ────────────────────────────────────────────────────
 
 def evaluate(X, df: pd.DataFrame, result: TeamingResult,

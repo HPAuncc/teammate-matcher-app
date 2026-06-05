@@ -19,6 +19,7 @@ import os
 import zipfile
 
 import altair as alt
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -64,6 +65,22 @@ TECHNICAL_METRICS = {
     "silhouette": ("Silhouette", "↑", "Cluster cohesion vs. separation (−1 to 1)."),
     "davies_bouldin": ("Davies–Bouldin", "↓", "How much clusters overlap (0 is best)."),
     "calinski_harabasz": ("Calinski–Harabasz", "↑", "Between- vs. within-team spread."),
+}
+
+# Friendly labels for the per-team drill-down charts.
+SKILL_LABELS = {
+    "skill_python": "Python", "skill_data_analysis": "Data analysis",
+    "skill_statistics": "Statistics", "skill_visualization": "Visualization",
+    "skill_ml": "ML", "skill_writing": "Writing",
+    "skill_research": "Research", "skill_presenting": "Presenting",
+}
+DAY_LABELS = {
+    "avail_mon": "Mon", "avail_tue": "Tue", "avail_wed": "Wed", "avail_thu": "Thu",
+    "avail_fri": "Fri", "avail_sat": "Sat", "avail_sun": "Sun",
+}
+TIME_LABELS = {
+    "avail_morning": "Morning", "avail_afternoon": "Afternoon",
+    "avail_evening": "Evening", "avail_latenight": "Late night",
 }
 
 # Browser favicon: prefer the generated mark, fall back to an emoji.
@@ -129,6 +146,8 @@ h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif !important; co
 .tm-metric-sub { font-size: .8rem; color: #475569; margin-top: 3px; line-height: 1.4; }
 .tm-metric-scale { font-size: .7rem; color: #94A3B8; margin-top: 5px; }
 .tm-section { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: #1E3A5F; font-size: 1.05rem; margin: 22px 0 8px; }
+.tm-subhead { font-size: .82rem; font-weight: 600; color: #475569; margin: 14px 0 6px; }
+.tm-members { font-size: .82rem; color: #64748B; margin: 8px 0 2px; word-break: break-word; }
 
 /* Team cards */
 .tm-team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px,1fr)); gap: 14px; margin: 8px 0 6px; }
@@ -269,6 +288,146 @@ def render_technical_metrics(metrics: dict):
         )
     cards.append("</div>")
     st.markdown("".join(cards), unsafe_allow_html=True)
+
+
+def _metric_card_html(label: str, value: str, sub: str = "", scale: str = "") -> str:
+    return (f'<div class="tm-metric"><div class="tm-metric-label">{label}</div>'
+            f'<div class="tm-metric-value">{value}</div>'
+            f'<div class="tm-metric-sub">{sub}</div>'
+            f'<div class="tm-metric-scale">{scale}</div></div>')
+
+
+def _cmp_line(team_v, class_v, suffix="", higher_better=True, fmt="{:.0f}") -> str:
+    """A 'vs class avg' line with a colored ▲/▼ so outlier teams pop."""
+    if class_v is None or pd.isna(class_v):
+        return ""
+    cls_txt = fmt.format(class_v)
+    if abs(team_v - class_v) < 0.5:
+        return f'<span style="color:#64748B;">≈ class avg {cls_txt}{suffix}</span>'
+    up = team_v > class_v
+    if higher_better is None:
+        color = "#64748B"
+    else:
+        color = "#059669" if (up == bool(higher_better)) else "#DC2626"
+    arrow = "▲" if up else "▼"
+    return f'<span style="color:{color};">{arrow} vs class avg {cls_txt}{suffix}</span>'
+
+
+def _avail_chart(labels, counts, color, team_size, axis_title):
+    cdf = pd.DataFrame({"slot": labels, "free": counts})
+    return (
+        alt.Chart(cdf)
+        .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color=color)
+        .encode(
+            x=alt.X("slot:N", sort=labels, title=axis_title, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("free:Q", title="Members free",
+                    scale=alt.Scale(domain=[0, team_size]),
+                    axis=alt.Axis(tickMinStep=1)),
+            tooltip=[alt.Tooltip("slot:N", title="Slot"),
+                     alt.Tooltip("free:Q", title="Members free")],
+        )
+        .properties(height=170)
+        .configure_view(strokeWidth=0)
+        .configure_axis(grid=False, labelColor=MUTED, titleColor=MUTED)
+    )
+
+
+def _skill_chart(labels, levels, color):
+    sdf = pd.DataFrame({"skill": labels, "level": levels})
+    bars = (
+        alt.Chart(sdf)
+        .mark_bar(cornerRadiusEnd=4, color=color)
+        .encode(
+            y=alt.Y("skill:N", sort=labels, title=None),
+            x=alt.X("level:Q", title="Strongest member’s level (%)",
+                    scale=alt.Scale(domain=[0, 100])),
+            tooltip=[alt.Tooltip("skill:N", title="Skill"),
+                     alt.Tooltip("level:Q", title="Top level", format=".0f")],
+        )
+    )
+    rule = (
+        alt.Chart(pd.DataFrame({"x": [50]}))
+        .mark_rule(color="#94A3B8", strokeDash=[5, 4])
+        .encode(x="x:Q")
+    )
+    return (
+        (bars + rule)
+        .properties(height=24 * len(labels) + 24)
+        .configure_view(strokeWidth=0)
+        .configure_axis(grid=False, labelColor=MUTED, titleColor=MUTED)
+    )
+
+
+def render_team_detail(processed, result, ids, team_no, n_skills, class_metrics):
+    """One team's scores + visualizations, shown inside its tab."""
+    team_idx = team_no - 1
+    color = TEAM_PALETTE[(team_no - 1) % len(TEAM_PALETTE)]
+    rows = np.where(result.labels == team_idx)[0]
+    members = [str(m) for m in ids.values[rows]]
+    size = len(rows)
+
+    ov = evaluate.team_schedule_overlap(processed, result, team_idx)
+    cov = evaluate.team_skill_coverage(processed, result, team_idx)
+    div = evaluate.team_skill_diversity(processed, result, team_idx)
+    ov_cls = class_metrics.get("schedule_overlap")
+    cov_cls = class_metrics.get("skill_coverage")
+    div_cls = class_metrics.get("skill_variance")
+
+    cards = ['<div class="tm-metric-grid">']
+    cards.append(_metric_card_html(
+        "Schedule overlap",
+        "—" if _is_missing(ov) else f"{ov * 100:.0f}%",
+        "needs 2+ members" if _is_missing(ov)
+        else _cmp_line(ov * 100, None if _is_missing(ov_cls) else ov_cls * 100, "%", True),
+        "0–100%",
+    ))
+    cards.append(_metric_card_html(
+        "Skill coverage",
+        "—" if _is_missing(cov) else f"{int(cov)} of {n_skills}",
+        "" if _is_missing(cov)
+        else _cmp_line(cov, cov_cls, f" of {n_skills}", True, fmt="{:.1f}"),
+        f"0–{n_skills}",
+    ))
+    cards.append(_metric_card_html(
+        "Skill diversity",
+        "—" if _is_missing(div) else f"{div / 0.5 * 100:.0f}%",
+        "needs 2+ members" if _is_missing(div)
+        else _cmp_line(div / 0.5 * 100, None if _is_missing(div_cls) else div_cls / 0.5 * 100, "%", None),
+        "0–100%",
+    ))
+    cards.append("</div>")
+    st.markdown("".join(cards), unsafe_allow_html=True)
+
+    st.markdown(f'<div class="tm-members"><strong>{size} members:</strong> '
+                f'{", ".join(members)}</div>', unsafe_allow_html=True)
+
+    day_cols = [c for c in DAY_LABELS if c in processed.columns]
+    time_cols = [c for c in TIME_LABELS if c in processed.columns]
+    if day_cols or time_cols:
+        st.markdown('<div class="tm-subhead">When this team is free</div>',
+                    unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        if day_cols:
+            dcounts = processed[day_cols].values[rows].sum(axis=0)
+            with c1:
+                st.altair_chart(
+                    _avail_chart([DAY_LABELS[c] for c in day_cols], dcounts, color, size, "Day"),
+                    use_container_width=True)
+        if time_cols:
+            tcounts = processed[time_cols].values[rows].sum(axis=0)
+            with c2:
+                st.altair_chart(
+                    _avail_chart([TIME_LABELS[c] for c in time_cols], tcounts, color, size, "Time of day"),
+                    use_container_width=True)
+
+    skill_cols = [c for c in SKILL_LABELS if c in processed.columns]
+    if skill_cols:
+        st.markdown('<div class="tm-subhead">Skill coverage — bars past the dashed '
+                    'line have a capable member</div>', unsafe_allow_html=True)
+        levels = processed[skill_cols].values[rows].max(axis=0) * 100
+        st.altair_chart(
+            _skill_chart([SKILL_LABELS[c] for c in skill_cols], levels, color),
+            use_container_width=True)
 
 
 def render_team_cards(roster: pd.DataFrame):
@@ -518,6 +677,15 @@ else:
     st.markdown('<div class="tm-section">What this means for your teams</div>',
                 unsafe_allow_html=True)
     render_friendly_metrics(metrics, n_skills)
+
+    st.markdown('<div class="tm-section">Team-by-team breakdown</div>',
+                unsafe_allow_html=True)
+    st.caption("Pick a team to see its own scores, when it can meet, and which "
+               "skills it covers. Class averages are shown for comparison.")
+    team_ids = sorted(roster["team"].unique())
+    for tab, t in zip(st.tabs([f"Team {t}" for t in team_ids]), team_ids):
+        with tab:
+            render_team_detail(processed, result, ids, int(t), n_skills, metrics)
 
     with st.expander("Technical clustering metrics"):
         render_technical_metrics(metrics)
