@@ -67,7 +67,7 @@ themselves 1–5 on each skill. This is the part you make your own:
 | Engineering / CS | Programming, CAD / modeling, Prototyping, Hardware / circuits, Testing & debugging, Technical writing, Project planning |
 | Business / Marketing | Market research, Financial analysis, Writing, Presenting, Project management, Data analysis, Creative strategy |
 | Design / Arts | Concept development, Visual design, Prototyping, Critique & feedback, Software tools, Presenting, Writing |
-| General / Transferable | Writing, Research, Data analysis, Public speaking, Project planning, Technical skills, Creative design, Critical thinking |
+| General / Transferable | Writing, Research, Critical thinking, Presenting, Project management, Technical / software skills, Creativity |
 
 ---
 
