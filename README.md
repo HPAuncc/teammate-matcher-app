@@ -1,3 +1,11 @@
+<p align="center">
+  <a href="https://teamora.streamlit.app">
+    <img src="assets/teamora-hero.png"
+         alt="Teamora — form balanced student teams from a quick survey"
+         width="820">
+  </a>
+</p>
+
 # Teamora
 
 **Form balanced student teams from a quick survey — no spreadsheets, no guesswork.**
